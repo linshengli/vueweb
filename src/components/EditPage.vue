@@ -1,0 +1,134 @@
+<template>
+<div>
+  <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
+      <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="/">QianMai</a>
+      <ul class="navbar-nav px-3">
+        <li class="nav-item text-nowrap">
+          <a v-if="! signed"  href="/" class="nav-link">Sign in</a>    
+          <a v-if="signed" href="/" class="nav-link">Sign out</a>
+        </li>
+      </ul>
+    </nav>
+    <div class="container">
+    <div class="row">
+    <button class="col-md-1 btn btn-primary pull-right" style="margin:20px" @click="submitMoment"> Submit</button>
+    <select style="margin:20px" class="col-md-3" v-model="selectUser">
+        <!-- <option value = "">Select User</option> -->
+        <option :key="index" v-for="(user,index) in Users" :value="user.id">{{ user.username +"  /  " + user.id }}</option>
+    </select>
+    <p class = "userText" style="margin:20px">Field: </p>
+    <input type="text" style="margin:20px" v-model="field">
+    </div></div>
+    <div class="container full-height editor">
+    <div class="row" >
+        <VueEditor class="col-md-12" v-model="input"> </VueEditor>
+    </div>
+    </div>
+</div>
+</template>
+
+<script>
+import { VueEditor } from "vue2-editor";
+import { AddMoment, fetchAllUser } from "../api/api";
+import marked from "marked";
+
+export default {
+  name: "EditComponent",
+  components: {
+    VueEditor
+  },
+  data() {
+    return {
+      signed: true,
+      content: "",
+      selectUser: "",
+      input: "Please input your description here",
+      field: "",
+      count: 1,
+      Users: [],
+      justSaved: false
+    };
+  },
+  methods: {
+    submitMoment() {
+      let params = {};
+      params.mtext = this.input;
+      // if (this.selectUser == ""); //[TODO]
+      params.passed = 0;
+      params.userx = this.selectUser;
+      params.field = this.field;
+      if (
+        this.selectUser == "" ||
+        this.selectUser == null ||
+        this.field == "" ||
+        this.field == null
+      ) {
+        this.$message.error("请选择发起人或者领域!");
+        return;
+      }
+      let self = this;
+      AddMoment(params)
+        .then(data => {
+          localStorage.removeItem("input_moment");
+          this.$message.success("提交成功!");
+          this.input = "Please input your description here";
+        })
+        .catch(err => console.log(err));
+    },
+    timer: function() {
+      localStorage.setItem("input_moment", this.input);
+      // console.log(this.count ++ )
+      // console.log(this.input + this.count);
+    }
+  },
+  mounted() {
+    // console.log("mounted");
+    // console.log(localStorage.length);
+    let ls_item = localStorage.getItem("input_moment");
+    // console.log(ls_item);
+    if (ls_item == undefined || ls_item == "" || ls_item == null) {
+      this.input = "Please input your description here";
+    } else {
+      this.input = ls_item;
+    }
+    this.$nextTick(function() {
+      setInterval(this.timer, 10000);
+    });
+    let param = {};
+    let self = this;
+    fetchAllUser(param)
+      .then(data => {
+        self.Users = data.User;
+      })
+      .catch(err => console.log(err));
+  }
+};
+</script>
+
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style scoped>
+textarea,
+#editor {
+  display: inline-block;
+  width: 49%;
+  height: 100%;
+  vertical-align: top;
+  box-sizing: border-box;
+  padding: 0 20px;
+}
+.userText {
+  font-size: 27px;
+}
+
+textarea {
+  border: none;
+  border-right: 1px solid #ccc;
+  resize: none;
+  outline: none;
+  background-color: #f6f6f6;
+  font-size: 14px;
+  font-family: "Monaco", courier, monospace;
+  padding: 20px;
+  height: 750px;
+}
+</style>
